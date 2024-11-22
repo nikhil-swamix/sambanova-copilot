@@ -182,6 +182,8 @@ class ModernWidget(QWidget):
         self.type_button = QPushButton("⌨️")
         self.capture_button = QPushButton("📸")
         self.send_button = QPushButton("🤖")
+        self.reset_button = QPushButton("🔄")
+
 
         # Configure all buttons
         buttons_config = [
@@ -189,6 +191,7 @@ class ModernWidget(QWidget):
             (self.capture_button, self.capture_screen, "Capture Screen (📸 Screenshot)"),
             (self.send_button, self.send_to_claude, "Send to AI (🧠 Process)"),
             (self.type_button, self.type_copied_text, "Quick Type (⌨️ Auto-type)"),
+            (self.reset_button, self.reset_data, "Reset Data (🔄 Clear)"),
         ]
 
         # Add buttons vertically to button area
@@ -202,12 +205,12 @@ class ModernWidget(QWidget):
         button_area.addStretch()
         # Add checkboxes
         checkbox_layout = QHBoxLayout()
-        self.clipboard_checkbox = QCheckBox("clipboard")
-        self.workspace_checkbox = QCheckBox("workspace") 
-        self.agent_checkbox = QCheckBox("agent mode")
+        self.clipboard_checkbox = QCheckBox("Clipboard")
+        self.workspace_checkbox = QCheckBox("Workspace") 
+        self.websearch_checkbox = QCheckBox("Web Search")
 
         # Configure each checkbox
-        for checkbox in [self.clipboard_checkbox, self.workspace_checkbox, self.agent_checkbox]:
+        for checkbox in [self.clipboard_checkbox, self.workspace_checkbox, self.websearch_checkbox]:
             checkbox.setCursor(Qt.CursorShape.PointingHandCursor)
             checkbox_layout.addWidget(checkbox)
         
@@ -251,6 +254,13 @@ class ModernWidget(QWidget):
 
     def sizeHint(self):
         return QSize(600, 400)
+    
+    def reset_data(self):
+        self.screen_capture = None
+        self.transcription = ""
+        self.screen_view.clear()
+        self.status_label.setText("🟢 Data cleared")
+        QApplication.clipboard().clear()
 
     def type_copied_text(self, warns=3):
         import pyautogui
@@ -302,7 +312,7 @@ class ModernWidget(QWidget):
             "https://api.groq.com/openai/v1/audio/transcriptions",
             headers={"Authorization": f"Bearer {os.getenv('GROQ_API_KEY')}"},
             files={"file": ("audio.wav", af, "audio/wav")},
-            data={"model": "whisper-large-v3-turbo", "temperature": 0, "response_format": "json", "language": "en"},
+            data={"model": "whisper-large-v3", "temperature": 0, "response_format": "json", "language": "en"},
         )
         result = r.json()['text'] if r.status_code == 200 else f"Error:{r.status_code} {r.text}"
         self.transcription = result
@@ -326,7 +336,12 @@ class ModernWidget(QWidget):
                 self.status_label.setText("Error: Please provide either an image or voiceover")
                 return
 
-            self.status_label.setText("Sending to OpenAI...")
+
+
+            # Create OpenAI client
+            client = utils.get_client()
+
+            self.status_label.setText("Sending to AI...")
 
             # Convert QPixmap to base64-encoded string if screen capture exists
             image_base64 = None
@@ -340,18 +355,10 @@ class ModernWidget(QWidget):
                     image_base64 = buffer.toBase64().toStdString()
                 except Exception as e:
                     self.status_label.setText(f"Error processing image: {str(e)}")
-                    return
+                    return 
                 finally:
                     buffer_io.close()
 
-            # Validate API key
-            api_key = os.getenv('SAMBANOVA_API_KEY')
-            if not api_key:
-                self.status_label.setText("Error: APIKEY not found in environment variables")
-                return
-
-            # Create OpenAI client
-            client = OpenAI(base_url="https://api.sambanova.ai/v1", api_key=api_key)
 
             # use clipboard if selected
             clippy = ""
@@ -359,21 +366,32 @@ class ModernWidget(QWidget):
                 clippy = QApplication.clipboard().text()
                 print(f"Clipboard: {clippy[:1000]}")
             
+            workspace_ctx = ""
+            
+            web_search_context = ""
+            if self.websearch_checkbox.isChecked():
+                query
+                web_search_context = utils.get_first_google_result()
+            
             # Build message content
             messages = [
                 {
                     "role": "system",
-                    "content": f"""You are an interview assistant copilot. first reason out with what you will do, make a good hypothesis, and then seperate it and give final answer
+                    "content": f"""You are helpful copilot. Always Give Short Readable well formatted output
                     
-                    # Example:
-                    ...reasoning...
-                    -----
-                    ...answer...
                     
-                    # Contexts
+                    # Contexts to refer from (if any):
                     <Clipboard>
                     {clippy}
                     </Clipboard>
+                    
+                    <local-documents-results>
+                    {workspace_ctx}
+                    </local-documents-results>
+                    
+                    <web-search-results>
+                    {web_search_context}
+                    </web-search-results>
                     """.replace("\n\n", "\n").replace("\t", " ")
                 }
             ]
@@ -407,18 +425,18 @@ class ModernWidget(QWidget):
             # Send request to OpenAI
             try:
                 response = client.chat.completions.create(
-                    model="Llama-3.2-11B-Vision-Instruct" if image_base64 else "Meta-Llama-3.1-405B-Instruct",
+                    model="Llama-3.2-90B-Vision-Instruct" if image_base64 else "Meta-Llama-3.1-405B-Instruct",
                     messages=messages,
                     max_tokens=2048,
                 )
                 # print(response)
                 ai_response = response.choices[0].message.content
                 self.show_claude_response(ai_response)
+                self.status_label.setText("Response Received From AI")
 
                 # Copy response to clipboard
-                clipboard = QApplication.clipboard()
-                clipboard.setText(ai_response)
-                self.status_label.setText("Response received and copied to clipboard")
+                # clipboard = QApplication.clipboard()
+                # clipboard.setText(ai_response)
 
             except Exception as e:
                 self.status_label.setText(f"API Error: {str(e)}")
@@ -428,7 +446,7 @@ class ModernWidget(QWidget):
 
     def show_claude_response(self, response):
         dialog = QDialog(self)
-        dialog.setWindowTitle("Claude's Response")
+        dialog.setWindowTitle("AI's Response")
         layout = QVBoxLayout(dialog)
 
         text_edit = QTextEdit()

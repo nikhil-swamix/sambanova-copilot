@@ -32,4 +32,4 @@ black = "^22.10.0"
 flake8 = "^5.0.4"
 
 [tool.poetry.scripts]
-start = "swamix_copilot.copilot:main"
+start = "sambanova_copilot.copilot:main"

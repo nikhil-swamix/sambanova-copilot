@@ -1,4 +1,4 @@
 cd $PSScriptroot
 echo $PSScriptroot
-..\..\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
 pyw copilot.pyw
