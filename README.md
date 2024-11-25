@@ -1,3 +1,5 @@
+![Banner](assets/hero.png)
+
 # Samba Copilot
 
 Samba Copilot is a highly customizable multi purpose Copilot with agentic capabilities, which assists user based on their personalized queries. It can be used for a variety of
@@ -16,7 +18,8 @@ Features a plug-n-play architecture with many batteries included so a user can e
 
 <!-- insert a assets/flowchart.png -->
 
-![Banner](assets/samba-banner.png) ![Banner](assets/xpnova.png)
+![Banner](assets/samba-banner.png) 
+![Banner](assets/xpnova.png)
 
 ## Quick Start
 
