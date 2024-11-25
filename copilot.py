@@ -10,6 +10,7 @@ from PySide6.QtCore import Qt, QPoint, QSize, QTimer, QBuffer, QByteArray, QIODe
 from PySide6.QtGui import QIcon, QMouseEvent, QFont, QColor, QClipboard, QPixmap, QScreen
 
 import utils
+import vdb
 
 load_dotenv()
 
@@ -34,6 +35,9 @@ if missing_vars:
     print(r)
     # os.system("explorer ./.env")
 
+# VECTOR STORE
+my_vdb = vdb.VectorDB()
+logging.info(f"VectorDB initialized has {my_vdb.client.count(my_vdb.default_collection)} docs")
 colors = {
     "btnbg": "#ed7424",
     "success": "#fff",
@@ -367,6 +371,7 @@ class ModernWidget(QWidget):
         self.status_label.setText("Screen captured")
 
     def send_to_ai(self):
+
         logging.info("Sending to AI...")
 
         try:
@@ -403,6 +408,7 @@ class ModernWidget(QWidget):
                 print(f"Clipboard: {clippy[:1000]}")
 
             router_info = utils.router(self.transcription)
+            logging.info(f"Router Info: {router_info}")
             workspace_ctx = ""
             web_search_ctx = ""
             if router_info.get("docs_query", ""):
@@ -411,11 +417,13 @@ class ModernWidget(QWidget):
                 self.websearch_checkbox.setChecked(True)
 
             if self.workspace_checkbox.isChecked():
-                workspace_ctx = f"<workspace-results>{utils.workspace_search(router_info.get("docs_query"))}</workspace-results>"
+                workspace_ctx = f"<workspace-results>{my_vdb.query(router_info.get("docs_query",''))}</workspace-results>"
 
             if self.websearch_checkbox.isChecked():
                 web_search_ctx = f"<web-search> {utils.web_search(router_info.get("web_query"))} </web-search>"
-                logging.info("Appended Webresults to CTX")
+                logging.info(
+                    "Appended Webresults to CTX, Length:",
+                )
 
             # time.sleep(5)
             # Build message content
@@ -488,18 +496,48 @@ class ModernWidget(QWidget):
         text_edit.setReadOnly(True)
         layout.addWidget(text_edit)
 
+        button_layout = QHBoxLayout()
+
         copy_button = QPushButton("Copy to Clipboard")
         copy_button.clicked.connect(lambda: self.copy_to_clipboard(response))
-        layout.addWidget(copy_button)
+        button_layout.addWidget(copy_button)
+
+        export_button = QPushButton("Export PDF")
+        export_button.clicked.connect(lambda: self.export_artifact(response))
+        button_layout.addWidget(export_button)
 
         close_button = QPushButton("Close")
         close_button.clicked.connect(dialog.close)
-        layout.addWidget(close_button)
+        button_layout.addWidget(close_button)
+
+        layout.addLayout(button_layout)
 
         dialog.setLayout(layout)
         dialog.resize(500, 400)
         dialog.exec()
 
+
+    def export_artifact(self, markdown):
+        try:
+            self.status_label.setText("Exporting PDF...")
+            pdf_content = utils.save_artifact(markdown)
+
+            # Get suggested filename
+            utils.suggest_filename(markdown)
+
+            # Generate timestamp-based filename
+            filename = f"artifact_{int(time.time())}.pdf"
+            filepath = os.path.join(os.getenv('ARTIFACT_DIR', '.artifacts'), filename)
+
+            # Save PDF file
+            with open(filepath, 'wb') as f:
+                f.write(pdf_content)
+
+            self.status_label.setText(f"PDF exported to {filepath}")
+
+        except Exception as e:
+            self.status_label.setText(f"Export failed: {str(e)}")
+            
     def copy_to_clipboard(self, text):
         QApplication.clipboard().setText(text)
         self.status_label.setText("Response copied to clipboard")

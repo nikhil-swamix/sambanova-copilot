@@ -1,3 +1,5 @@
+from contextlib import suppress
+
 # Tailwind Like Programmatic Aliasing for sizes
 modelmap = {
     "xxs": "Meta-Llama-3.2-1B-Instruct",
@@ -72,7 +74,6 @@ def smart_chat(query, system="", model="s", max_tokens=2048, temperature=0.1, ra
 def web_search(query):
     from playwright.sync_api import sync_playwright, expect
     import time, re
-    from contextlib import suppress
 
     if not query:
         return "could not perform web query, as empty query was passed in tool call"
@@ -199,25 +200,21 @@ toolkit = [
         "type": "function",
         "function": {
             "name": "router",
-            "description": """Highly recommended for most general interactions. Use this tool when:
-                this tool can refer to the user's docs docs_query, which will be forwaded to another system, 
-                Can draft a web query whenever trigger words like 'search', 'find', 'lookup', 'news', 'tell me about' are used.
-                the outputs are handled further. docs and web queries can be mutually exclusive
-                """,
+            "description": """Main routing function for processing user queries and directing to appropriate systems. Capabilities: | Documentation Search: Processes internal doc queries using personal pronouns & doc terms | Web Search: Handles general knowledge queries based on search intent 4. System Instructions: Generates contextual prompts and guidelines Be optimistic on querying local data""",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "system": {
                         "type": "string",
-                        "description": "A well-crafted adaptive instructions prompt minimum 3-5 lines. that covers various aspects of the task, including the context, desired tone, and any specific guidelines. necessary for the success of the task",
+                        "description": "fine tuned system instructions 3 lines. mentions tone and specific relevant to task. inject common user preferences and obvious requirements, creative writing",
                     },
                     "web_query": {
                         "type": "string",
-                        "description": "The user's query or message, processed to ensure correct grammar and well-formed structure. always rewrite to make better return empty string if not applicable ",
+                        "description": "The user's query or message, redirect to online references always rewrite to make better return empty string if not applicable, be optimistic and provide a value when probability greater than 50% ",
                     },
                     "docs_query": {
                         "type": "string",
-                        "description": "this parameter drafts a human like search query to query existing knowledgebase. must append 3 keywords you deem beneficial.",
+                        "description": """Query generator for internal documentation search. Processes natural language queries by identifying documentation-specific triggers (e.g. 'my', 'our', 'docs', 'guide') and technical terms. always inject few keywords to align the search """,
                     },
                 },
                 "required": ["system"],
@@ -238,7 +235,11 @@ def router(query):
         },
         {"role": "user", "content": query},
     ]
-    r0 = get_client().chat.completions.create(model="Meta-Llama-3.1-70B-Instruct", messages=messages, tools=toolkit, tool_choice="auto", temperature=0.2)
+    with suppress(Exception):
+        r0 = get_client().chat.completions.create(model=modelmap['m'], messages=messages, tools=toolkit, tool_choice="auto", temperature=0.2)
+        if r0.error:
+            r0 = get_client().chat.completions.create(model=modelmap['s'], messages=messages, tools=toolkit, tool_choice="auto", temperature=0.2)
+            print("using mini router model")
     response = {"web_query": "", "docs_query": ""}
     if r0.choices[0].finish_reason == "tool_calls":
 
@@ -253,6 +254,8 @@ def router(query):
 if __name__ == '__main__':
     # result = web_search('how to write a quant algo')
     # print(f"Page content:\n{result}")
-    print(router("tell me about the latest trends in AI"))
-    print(router("Was my last support ticket for ai chip installation for the customer from acme corp resolved?"))
     print(router("Summarize and give highlights of the last meeting with ceo "))
+    print(router("Was my last support ticket for ai chip installation for the customer from acme corp resolved?"))
+    # print(router("Summarize and give highlights of the last meeting with ceo "))
+    # print(router("give latest trends in web development, google search"))
+    print(router("Searchfor recent election news"))
