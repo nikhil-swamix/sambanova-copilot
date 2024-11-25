@@ -417,10 +417,10 @@ class ModernWidget(QWidget):
                 self.websearch_checkbox.setChecked(True)
 
             if self.workspace_checkbox.isChecked():
-                workspace_ctx = f"<workspace-results>{my_vdb.query(router_info.get("docs_query",''))}</workspace-results>"
+                workspace_ctx = f"<workspace-results>{my_vdb.query(router_info.get('docs_query',''))}</workspace-results>"
 
             if self.websearch_checkbox.isChecked():
-                web_search_ctx = f"<web-search> {utils.web_search(router_info.get("web_query"))} </web-search>"
+                web_search_ctx = f"<web-search> {utils.web_search(router_info.get('web_query'))} </web-search>"
                 logging.info(
                     "Appended Webresults to CTX, Length:",
                 )
@@ -516,7 +516,6 @@ class ModernWidget(QWidget):
         dialog.resize(500, 400)
         dialog.exec()
 
-
     def export_artifact(self, markdown):
         try:
             self.status_label.setText("Exporting PDF...")
@@ -527,7 +526,7 @@ class ModernWidget(QWidget):
 
             # Generate timestamp-based filename
             filename = f"artifact_{int(time.time())}.pdf"
-            filepath = os.path.join(os.getenv('ARTIFACT_DIR', '.artifacts'), filename)
+            filepath = utils.get_resource_path(os.path.join(os.getenv('ARTIFACT_DIR', '.artifacts'), filename))
 
             # Save PDF file
             with open(filepath, 'wb') as f:
@@ -537,7 +536,7 @@ class ModernWidget(QWidget):
 
         except Exception as e:
             self.status_label.setText(f"Export failed: {str(e)}")
-            
+
     def copy_to_clipboard(self, text):
         QApplication.clipboard().setText(text)
         self.status_label.setText("Response copied to clipboard")
