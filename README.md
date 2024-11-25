@@ -1,21 +1,124 @@
-# Samba Copilot (Whitelable)
+# Samba Copilot
+Samba Copilot is a highly customizable multi purpose Copilot with agentic capabilities, which assists user based on their personalized queries. It can be used for a variety of tasks such as Note Taker/Maker, meme explainer, document analysis, realtime online conference support, content writing, translation, quick web research, UI/UX review, email assistant and more! Currently a hackathon proof of concept, but can be extended to a full fledged product.
 
-This is Submission for Sambanova Lightning Fast AI hackathon
+Features a plug-n-play architecture with many batteries included so a user can easily add or remove features as per their needs (you can keep as light or as heavy).
+
+- BYOM : Bring your own model / finetune
+- BYOT : Bring your own tools (Agent)
+- BYOC : Bring your own context / data
+- BYOP : Bring your own prompt / template
+- BYOS : Build your own Stuff (plugin ecosystem)
+
+# Gallery
+<!-- insert a assets/flowchart.png -->
+![Banner](assets/samba-banner.png)
+![Banner](assets/xpnova.png)
+
 
 ## Quick Start
 
+### Option 1 : Standard
 first clone repo to a folder:
 ```
 git clone https://github.com/nikhil-swamix/sambanova-copilot.git
+cd sambanova-copilot
+pip install -r requirements.txt
+python copilot.py
+
 ```
+Try to directly run the run_*.ps1 or .sh. here * is platform. it will install dependencies and run the app. run 2 times if it fails the first time, (troubleshoot tip).
 
-Try to directly run the run_app_windows, or run_app_linux for mac. it will install dependencies and run the app. run 2 times if it fails the first time.
+### Option 2 : Easiest (windows):
 
-Option2:  https://python-poetry.org/docs/#installing-with-the-official-installer use poetry to manage dependencies 
+Go to releases section and download the executable, and double click! should run in most cases unless some system settings are incorrect.
 
-Running: 
-do `poetry shell` and `poetry install` and in same terminal `pythonw copilot.pyw` , here w is for hiding console logs, try `python copilot.pyw` if it fails.
+### Option 3 : Preferred (poetry):
 
+Get Poetry:  https://python-poetry.org/docs/#installing-with-the-official-installer  
+
+```
+# Cd to directory after git clone
+git clone https://github.com/nikhil-swamix/sambanova-copilot.git
+cd sambanova-copilot
+poetry install
+poetry run python copilot.py
+```
+A great care has been taken to make it distributable and easy to use, please open issue in repo if any encountered.
 
 ## Requirements
 make sure you have SAMBANOVA_API_KEY, GROQ_API_KEY , configured in .env , some keys are provided.
+
+---
+
+# How it works
+## Frontend
+![Flowchart](assets/comprehensive-guide.png)
+## Backend
+![Flowchart](assets/flowchart.png)
+
+---
+
+# SambaNova Copilot Guide
+
+## How to Use
+
+- Press 1 (🎤) - Start/stop voice recording 
+- Press 2 (📸) - Capture current screen
+- Press 3 (🤖) - Send to AI for processing
+- Press 4 (⌨️) - Auto-type response (100 chars/sec)
+- Toggle Clipboard - Use copied text as additional context
+- Toggle Workspace - Reference local documents
+- Toggle Web Search - Include internet results
+- Reset (🔄) - Clear current session data
+
+## Example Use Cases (can extend with plugins)
+
+- Code Review: Screenshot code + voice ask "explain this code"
+- Meeting Notes: Record conversations for instant transcription and summary
+- Meme Explainer: Capture meme image + ask for cultural context
+- Document Analysis: Screenshot text + ask for key points summary
+- Technical Support: Capture error screen + ask for solutions
+- Content/Blog Writing: Dictate rough ideas for AI enhancement 
+- Translation Helper: Record foreign language for translation and tips
+- Quick Research: Combine clipboard articles + voice questions
+- UI/UX Review: Screenshot designs for instant feedback
+- Email Assistant (with plugin): Dictate main points for professional email drafts
+
+Pro Tip: Combine voice + image + clipboard for best results
+
+
+## Useful Features
+- Does not require API for web search, use local browser for free search! (msedge, chrome, firefox) !
+- Can use local documents as context for better results
+- Can use clipboard text as additional context
+- Can use voice recording as primary instruction.
+- Automatic Tool Decision Based on user query (Agentic/Smart Mode) (Experimental)
+
+# Highlights
+<!-- samba-example-meme.png -->
+![Example Meme](assets/samba-example-meme.png)
+
+# Configuration help 
+KEYS_WILL_BE_DELETED_POST_HACKATHON_DATE recommended to get your own keys, these keys are in .env file
+
+##### SAMBANOVA_API_KEY_HELP
+    https://cloud.sambanova.ai/apis
+
+##### GROQ_API_KEY_HELP
+    Used for text to speech
+    https://console.groq.com/keys
+
+##### VOYAGE_API_KEY_HELP
+    https://dash.voyageai.com/api-keys
+
+##### WORKSPACE_DIR_HELP
+    This is a folder of .md files which will be used as context for the AI
+
+## Upcoming
+- Reasoning mode (some challenge with llama to act as thinker, in progress)
+- Save history and submit to SambaStudio finetune job so model just "gets it"
+- ui based prompt editor , add remove rules in system prompt on the fly
+- Share json backed OPEN API compatible Workflows using "SambaHub" maybe.
+
+# Known Issues
+- Please open issues if any encountered. will be added and try to resolve.

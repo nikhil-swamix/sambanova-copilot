@@ -1,2 +1,9 @@
 key.env
 *.pyc
+build
+dist
+__pycache__/
+.workspace/vdb/*
+*.sqlite
+*.log
+.lock

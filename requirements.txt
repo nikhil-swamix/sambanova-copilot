@@ -9,4 +9,5 @@ swamix>=0.0.0
 openai>=1.0
 python-dotenv>=1.0.1
 voyageai>=0.3.1
-chromadb
+# chromadb
+qdrant_client

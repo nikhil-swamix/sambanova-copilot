@@ -1,32 +1,38 @@
-import io
-import os
-import base64
-import json
-import sys, time
-from pathlib import Path
+import io, os, base64, json, sys, time, math, logging
 import sounddevice as sd
-from contextlib import suppress
-
-import numpy as np
 import requests
-from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QDialog, QTextEdit,QCheckBox
+
+from pathlib import Path
+from contextlib import suppress
+from dotenv import load_dotenv
+from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QDialog, QTextEdit, QCheckBox
 from PySide6.QtCore import Qt, QPoint, QSize, QTimer, QBuffer, QByteArray, QIODevice, QSettings
 from PySide6.QtGui import QIcon, QMouseEvent, QFont, QColor, QClipboard, QPixmap, QScreen
-import soundfile as sf
-# import anthropic
+
 import utils
-from openai import OpenAI
-from dotenv import load_dotenv
+
 load_dotenv()
 
-workspace_dir = Path(__file__).parent / "workspace"
-workspace_dir.mkdir(exist_ok=True)
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', handlers=[logging.FileHandler('copilot.log'), logging.StreamHandler()]
+)
 
-required_vars = ['SAMBANOVA_API_KEY', 'GROQ_API_KEY']
+# WORKSPACE_DIR
+(Path(__file__).parent / os.getenv('WORKSPACE_DIR', '.workspace')).mkdir(exist_ok=True)
+# ARTIFACT_DIR
+(Path(__file__).parent / os.getenv('ARTIFACT_DIR', '.artifacts')).mkdir(exist_ok=True)
+
+required_vars = ['SAMBANOVA_API_KEY', 'GROQ_API_KEY', "VOYAGE_API_KEY"]
 missing_vars = [var for var in required_vars if not os.getenv(var)]
 if missing_vars:
-    print(f"Missing required environment variables: {', '.join(missing_vars)}")
-    print(f"Please set them in .env")
+    logging.error(f"Missing required environment variables: {', '.join(missing_vars)} Please set them in .env, an editor will open for convenience")
+    r = os.system("code ./.env")
+    if r == 1:
+        logging.error("Could not open .env file with VSCODE shortcut, using notepapdi")
+        r = os.system("notepad ./.env")
+    print(r)
+    # os.system("explorer ./.env")
 
 colors = {
     "btnbg": "#ed7424",
@@ -98,15 +104,23 @@ STYLESHEET = f"""
     }}
 """
 
+
 def generate_sine_wave(frequency, duration, sample_rate=44100):
-    t = np.linspace(0, duration, int(sample_rate * duration), endpoint=False)
-    wave = 0.5 * np.sin(2 * np.pi * frequency * t)
-    return wave.astype(np.float32)
+    # Calculate number of samples
+    num_samples = int(sample_rate * duration)
+    # Generate samples using pure Python
+    wave = []
+    for i in range(num_samples):
+        t = i / sample_rate
+        sample = 0.5 * math.sin(2 * math.pi * frequency * t)
+        wave.append(float(sample))
+    return wave
 
 
 class ModernWidget(QWidget):
     def __init__(self):
         super().__init__()
+        logging.info("Initializing Copilot")
 
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
@@ -115,32 +129,33 @@ class ModernWidget(QWidget):
         self.transcription = ""
         self.initUI()
         self.initShortcuts()
+        logging.info("Initializing Success")
 
     def initShortcuts(self):
         self.rec_btn.setShortcut("1")
         self.capture_button.setShortcut("2")
         self.send_button.setShortcut("3")
         self.type_button.setShortcut("4")
+
     def _exit(self):
         import soundfile as sf
-        
+
         try:
-            # Read the mp3 file
-            data, samplerate = sf.read("exit.mp3")
-            
-            # Play using sounddevice
+            data, samplerate = sf.read(utils.get_resource_path("assets/exit.mp3"))
             sd.play(data, samplerate)
-            # Wait until file is done playing
             sd.wait()
-            
+
         except Exception as e:
             print(f"Error playing exit sound: {e}")
         finally:
             # Close application
             QApplication.quit()
-            
+
     def initUI(self):
         self.setStyleSheet(STYLESHEET)
+        # with open('ashiled.txt', 'w') as f:
+        #     f.write(str(os.listdir(utils.get_resource_path('assets'))))
+        #     f.write(utils.get_first_google_result('recepie for biscuit'))
 
         main_widget = QWidget(self)
         main_widget.setObjectName("mainWidget")
@@ -184,12 +199,11 @@ class ModernWidget(QWidget):
         self.send_button = QPushButton("🤖")
         self.reset_button = QPushButton("🔄")
 
-
         # Configure all buttons
         buttons_config = [
             (self.rec_btn, self.tr, "Record Audio (🎤 Voice Capture)"),
             (self.capture_button, self.capture_screen, "Capture Screen (📸 Screenshot)"),
-            (self.send_button, self.send_to_claude, "Send to AI (🧠 Process)"),
+            (self.send_button, self.send_to_ai, "Send to AI (🧠 Process)"),
             (self.type_button, self.type_copied_text, "Quick Type (⌨️ Auto-type)"),
             (self.reset_button, self.reset_data, "Reset Data (🔄 Clear)"),
         ]
@@ -206,20 +220,38 @@ class ModernWidget(QWidget):
         # Add checkboxes
         checkbox_layout = QHBoxLayout()
         self.clipboard_checkbox = QCheckBox("Clipboard")
-        self.workspace_checkbox = QCheckBox("Workspace") 
+        self.workspace_checkbox = QCheckBox("Workspace")
         self.websearch_checkbox = QCheckBox("Web Search")
 
         # Configure each checkbox
         for checkbox in [self.clipboard_checkbox, self.workspace_checkbox, self.websearch_checkbox]:
             checkbox.setCursor(Qt.CursorShape.PointingHandCursor)
             checkbox_layout.addWidget(checkbox)
-        
+
         checkbox_layout.addStretch()
 
+        # Add transcript text edit
+        self.transcript_edit = QTextEdit()
+        self.transcript_edit.setPlaceholderText("Narration will appear here...")
+        self.transcript_edit.setStyleSheet(
+            """
+            QTextEdit {
+                background-color: rgba(0, 0, 0, 0.5);
+                color: white;
+                border-radius: 5px;
+                padding: 5px;
+            }
+        """
+        )
+
+        self.transcript_edit.textChanged.connect(self.on_transcript_changed)
+        self.transcript_edit.setFixedHeight(40)
         # Add checkbox layout below buttons
         content_layout.addLayout(button_area)
         content_layout.addLayout(checkbox_layout)
-        # Layout 2: Screen Area
+        content_layout.addWidget(self.transcript_edit)
+
+        # ---------- Layout 2: Screen Area
         screen_area = QVBoxLayout()
         screen_area.setSpacing(5)
 
@@ -254,7 +286,7 @@ class ModernWidget(QWidget):
 
     def sizeHint(self):
         return QSize(600, 400)
-    
+
     def reset_data(self):
         self.screen_capture = None
         self.transcription = ""
@@ -265,62 +297,67 @@ class ModernWidget(QWidget):
     def type_copied_text(self, warns=3):
         import pyautogui
 
-        beep_frequency = 15000  # Frequency in Hz
-        beep_duration = 0.3  # Duration in seconds
-        beep_wave = generate_sine_wave(beep_frequency, beep_duration)
-
+        beep_wave = generate_sine_wave(15000, 0.3)
         sd.play(beep_wave, samplerate=44100, blocking=True)
-
         time.sleep(3)
-        # print(QApplication.clipboard().text())
         pyautogui.typewrite(list(QApplication.clipboard().text()), 0.01)
+
+    def on_transcript_changed(self):
+        print("Transcript:", self.transcript_edit.toPlainText())
+        self.transcription = self.transcript_edit.toPlainText()
 
     def tr(self):
         if not self.r:
             self.r = 1
-            # self.rec_btn.setText("Stop Recording")
             self.rec_btn.setStyleSheet(f"background-color: {colors['success']}")
             self.status_label.setText("Recording...")
             self.ad = []
+            # Convert list to array for sounddevice
             self.st = sd.InputStream(callback=self.ac, channels=1, samplerate=self.sr)
             self.st.start()
         else:
             self.r = 0
-            # self.rec_btn.setText("Record Audio")
             self.rec_btn.setStyleSheet(STYLESHEET)
             self.status_label.setText("Processing...")
             self.st and (self.st.stop(), self.st.close())
             self.pa()
 
-    def ac(self, i, f, t, st):
-        st and print(st)
-        self.r and self.ad.append(i.copy())
+    def ac(self, indata, frames, time, status):
+        status and print(status)
+        # Convert numpy array to list before appending
+        if self.r:
+            self.ad.append([float(x[0]) for x in indata])
 
     def pa(self):
+        import soundfile as sf
+
         if not self.ad:
             self.status_label.setText("No audio data recorded")
             return
-        audio_data = np.concatenate(self.ad, axis=0)
+        # Flatten list of lists into single list
+        audio_data = [sample for chunk in self.ad for sample in chunk]
         audio_buffer = io.BytesIO()
         sf.write(audio_buffer, audio_data, self.sr, format='wav')
         audio_buffer.seek(0)
         self.transcribe_audio(audio_buffer)
 
     def transcribe_audio(self, af):
-        self.status_label.setText("Transcribing...")
+        logging.info("Transcribing audio ")
+        self.status_label.setText("🎤🔁 Transcribing...")
         r = requests.post(
             "https://api.groq.com/openai/v1/audio/transcriptions",
             headers={"Authorization": f"Bearer {os.getenv('GROQ_API_KEY')}"},
             files={"file": ("audio.wav", af, "audio/wav")},
             data={"model": "whisper-large-v3", "temperature": 0, "response_format": "json", "language": "en"},
         )
-        result = r.json()['text'] if r.status_code == 200 else f"Error:{r.status_code} {r.text}"
+        if r.status_code == 200:
+            result = r.json()['text']
+            logging.info(f"Transcription result: {result}")
+        else:
+            logging.error(f"Error during transcription: {r.status_code} - {r.text}")
         self.transcription = result
-        self.status_label.setText(f"Transcription: {result}")
-        # print("Transcription:", result)
-        if not self.clipboard_checkbox.isChecked():
-            QApplication.clipboard().setText(result)
-            self.status_label.setText(f"Clippied: {result}")
+        self.status_label.setText(f"🟢Transcription Success")
+        self.transcript_edit.setPlainText(self.transcription)
 
     def capture_screen(self):
         screen = QApplication.primaryScreen()
@@ -328,24 +365,23 @@ class ModernWidget(QWidget):
         scaled_pixmap = self.screen_capture.scaled(self.screen_view.size(), Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
         self.screen_view.setPixmap(scaled_pixmap)
         self.status_label.setText("Screen captured")
-        
-    def send_to_claude(self):
+
+    def send_to_ai(self):
+        logging.info("Sending to AI...")
+
         try:
             # Validate inputs
             if not self.screen_capture and not self.transcription:
                 self.status_label.setText("Error: Please provide either an image or voiceover")
                 return
 
-
-
-            # Create OpenAI client
             client = utils.get_client()
-
             self.status_label.setText("Sending to AI...")
 
             # Convert QPixmap to base64-encoded string if screen capture exists
             image_base64 = None
             if self.screen_capture:
+                logging.info("Image in CTX")
                 try:
                     buffer = QByteArray()
                     buffer_io = QBuffer(buffer)
@@ -355,83 +391,81 @@ class ModernWidget(QWidget):
                     image_base64 = buffer.toBase64().toStdString()
                 except Exception as e:
                     self.status_label.setText(f"Error processing image: {str(e)}")
-                    return 
+                    return
                 finally:
                     buffer_io.close()
-
 
             # use clipboard if selected
             clippy = ""
             if self.clipboard_checkbox.isChecked():
-                clippy = QApplication.clipboard().text()
+                logging.info("Appending Clipboard to CTX")
+                clippy = f"<Clipboard>{QApplication.clipboard().text()}</Clipboard>"
                 print(f"Clipboard: {clippy[:1000]}")
-            
+
+            router_info = utils.router(self.transcription)
             workspace_ctx = ""
-            
-            web_search_context = ""
+            web_search_ctx = ""
+            if router_info.get("docs_query", ""):
+                self.workspace_checkbox.setChecked(True)
+            if router_info.get("web_query", ""):
+                self.websearch_checkbox.setChecked(True)
+
+            if self.workspace_checkbox.isChecked():
+                workspace_ctx = f"<workspace-results>{utils.workspace_search(router_info.get("docs_query"))}</workspace-results>"
+
             if self.websearch_checkbox.isChecked():
-                query
-                web_search_context = utils.get_first_google_result()
-            
+                web_search_ctx = f"<web-search> {utils.web_search(router_info.get("web_query"))} </web-search>"
+                logging.info("Appended Webresults to CTX")
+
+            # time.sleep(5)
             # Build message content
             messages = [
                 {
                     "role": "system",
-                    "content": f"""You are helpful copilot. Always Give Short Readable well formatted output
+                    "content": f"""You are helpful copilot. Always Give Detailed Outputs, well formatted markdown. easy to understand
                     
                     
-                    # Contexts to refer from (if any):
-                    <Clipboard>
+                    # Contexts to refer from for better assist user query:
+                    
                     {clippy}
-                    </Clipboard>
-                    
-                    <local-documents-results>
                     {workspace_ctx}
-                    </local-documents-results>
+                    {web_search_ctx}
                     
-                    <web-search-results>
-                    {web_search_context}
-                    </web-search-results>
-                    """.replace("\n\n", "\n").replace("\t", " ")
+                    """.replace(
+                        "\n\n", "\n"
+                    ).replace(
+                        "\t", " "
+                    ),
                 }
             ]
 
             if self.transcription:
-                messages.append({
-                    "role": "user", 
-                    "content": f"Transcript: {self.transcription}"
-                })
+                messages.append({"role": "user", "content": f"Transcript: {self.transcription}"})
             # Add image message if image exists
             if image_base64:
-                messages[0]['role']="user"
-                messages.append({
-                    "role": "user",
-                    "content": [
-                        {
-                            "text": "Analyze this image carefully and " +  self.transcription,
-                            "type": "text"
-                        },
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/png;base64,{image_base64}"
-                            }
-                        }
-                    ]
-                })
+                messages[0]['role'] = "user"
+                messages.append(
+                    {
+                        "role": "user",
+                        "content": [
+                            {"text": "Analyze this image carefully and " + self.transcription, "type": "text"},
+                            {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{image_base64}"}},
+                        ],
+                    }
+                )
 
             # Add transcript if exists
 
             # Send request to OpenAI
             try:
                 response = client.chat.completions.create(
-                    model="Llama-3.2-90B-Vision-Instruct" if image_base64 else "Meta-Llama-3.1-405B-Instruct",
+                    model="Llama-3.2-11B-Vision-Instruct" if image_base64 else "Meta-Llama-3.1-405B-Instruct",
                     messages=messages,
                     max_tokens=2048,
                 )
                 # print(response)
                 ai_response = response.choices[0].message.content
-                self.show_claude_response(ai_response)
+                self.show_ai_response(ai_response)
                 self.status_label.setText("Response Received From AI")
 
                 # Copy response to clipboard
@@ -444,7 +478,7 @@ class ModernWidget(QWidget):
         except Exception as e:
             self.status_label.setText(f"Critical error: {str(e)}")
 
-    def show_claude_response(self, response):
+    def show_ai_response(self, response):
         dialog = QDialog(self)
         dialog.setWindowTitle("AI's Response")
         layout = QVBoxLayout(dialog)
