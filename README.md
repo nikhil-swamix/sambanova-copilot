@@ -2,6 +2,8 @@
 
 # Samba Copilot : Agent Storm Generator
 
+[🎥Watch Video Demo](https://youtu.be/ZITFUoB8b-k)
+
 This Copilot is highly customizable multi purpose with agentic capabilities, which assists user based on their personalized queries primarily with verbal query, jarvis style. 
 
 It can be used for a variety of tasks such as 
