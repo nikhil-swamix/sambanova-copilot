@@ -1,10 +1,18 @@
 ![Banner](assets/hero.png)
 
-# Samba Copilot
+# Samba Copilot : Agent Storm Generator
 
-Samba Copilot is a highly customizable multi purpose Copilot with agentic capabilities, which assists user based on their personalized queries. It can be used for a variety of
-tasks such as Note Taker/Maker, meme explainer, document analysis, realtime online conference support, content writing, translation, quick web research, UI/UX review, email
-assistant and more! Currently a hackathon proof of concept, but can be extended to a full fledged product.
+This Copilot is highly customizable multi purpose with agentic capabilities, which assists user based on their personalized queries primarily with verbal query, jarvis style. 
+
+It can be used for a variety of tasks such as 
+- Note Taker/Maker, with speech to text
+- meme explainer, OCR image to text
+- document analysis, presentations exporter
+- realtime online conference support, 
+- content writing, translation, quick web research
+> to keep this list small, what you can do with a mouth, eyes, hands and secondary brain, you can do with this copilot. 
+
+Currently a hackathon proof of concept, but can be extended to a full fledged product. please open issue and tell us what you do, we will add functionality carefully so it may benefit people who do same task as you!
 
 Features a plug-n-play architecture with many batteries included so a user can easily add or remove features as per their needs (you can keep as light or as heavy).
 
@@ -12,7 +20,6 @@ Features a plug-n-play architecture with many batteries included so a user can e
 -   BYOT : Bring your own tools (Agent)
 -   BYOC : Bring your own context / data
 -   BYOP : Bring your own prompt / template
--   BYOS : Build your own Stuff (plugin ecosystem)
 
 # Gallery
 
@@ -79,7 +86,7 @@ make sure you have SAMBANOVA_API_KEY, GROQ_API_KEY , configured in .env , some k
 
 -   Press 1 (🎤) - Start/stop voice recording
 -   Press 2 (📸) - Capture current screen
--   Press 3 (🤖) - Send to AI for processing
+-   Press 3 (🤖) - Send to AI for processing, it will show response in dedicated popup
 -   Press 4 (⌨️) - Auto-type response (100 chars/sec)
 -   Toggle Clipboard - Use copied text as additional context
 -   Toggle Workspace - Reference local documents
@@ -136,8 +143,7 @@ KEYS_WILL_BE_DELETED_POST_HACKATHON_DATE recommended to get your own keys, these
 
 ##### WORKSPACE_DIR_HELP
 
-    This is a folder of .md files which will be used as context for the AI
-  ```
+
 </details>
 
 
@@ -148,6 +154,6 @@ KEYS_WILL_BE_DELETED_POST_HACKATHON_DATE recommended to get your own keys, these
 -   ui based prompt editor , add remove rules in system prompt on the fly
 -   Share json backed OPEN API compatible Workflows using "SambaHub" maybe.
 
-# Known Issues
+# (un)Known Issues
 
 -   Please open issues if any encountered. will be added and try to resolve.
