@@ -139,22 +139,22 @@ def workspace_search(query):
 
 
 def suggest_filename(text):
+    import re
+
     r = smart_chat(
         text,
-        "give a creative descriptive self explaining filename for the text which i provided like a blog title, journal record, just the optimal name  use emojis if required at beginning, should span 10-20 words grasping full context, always add #tags in end. do not exceed word limit",
+        "give a elegant file name in plaintext with space self summarizing for the text which i provided  just the optimal name do not use invalid file characters, should span 10 words, always add #tags in end. do not exceed word limit",
         model="s",
-        temperature=0.33,
+        temperature=0.2,
     )
+    r = re.sub(r'[^a-zA-Z0-9#\s+]', '', r)
+    # r = r.replace(r'\n', '-')
     print(r)
+    return r
 
 
-def save_artifact(markdown, filename=None, css=None, engine='weasyprint'):
+def save_artifact(markdown, css=None, engine='weasyprint'):
     import requests
-
-    if filename:
-        raise NotImplementedError(
-            "filename not implemented, it suggest automatically, seems more effecient than humans, sort by date to check latest generations in artifacts folder"
-        )
 
     url = 'https://md-to-pdf.fly.dev/'
     headers = {
@@ -174,6 +174,7 @@ def save_artifact(markdown, filename=None, css=None, engine='weasyprint'):
         'engine': engine,
     }
     response = requests.post(url, headers=headers, data=data)
+    open(f'.artifacts/{suggest_filename(markdown)}.pdf', 'wb').write(response.content)
     # print(response.headers)
     return response.content
 
@@ -252,10 +253,65 @@ def router(query):
 
 
 if __name__ == '__main__':
-    # result = web_search('how to write a quant algo')
+    result = web_search('how to write a quant algo')
     # print(f"Page content:\n{result}")
-    print(router("Summarize and give highlights of the last meeting with ceo "))
-    print(router("Was my last support ticket for ai chip installation for the customer from acme corp resolved?"))
+    # print(router("Summarize and give highlights of the last meeting with ceo "))
+    # print(router("Was my last support ticket for ai chip installation for the customer from acme corp resolved?"))
     # print(router("Summarize and give highlights of the last meeting with ceo "))
     # print(router("give latest trends in web development, google search"))
-    print(router("Searchfor recent election news"))
+    # print(router("Searchfor recent election news"))
+#     ct = """**Comprehensive List of Latest AI Tools for 2024**
+
+# As artificial intelligence (AI) continues to evolve and transform industries, numerous innovative AI tools have emerged in 2024. This report provides a comprehensive list of the latest AI tools across various categories, including generative AI, multimodal AI, AI for workplace productivity, AI in science and health care, and regulation and ethics.
+
+# **Generative AI Tools**
+
+# 1. **ChatGPT**: A conversational AI model that generates human-like text responses.
+# 2. **DreamStaging AI**: A platform that uses AI to generate 3D models and virtual environments.
+# 3. **Opus Clip**: An AI-powered video editing tool that generates clips and videos.
+# 4. **SnapEdit**: An AI-driven photo editing tool that generates edited images.
+# 5. **Fliki AI**: A platform that uses AI to generate videos and animations.
+
+# **Multimodal AI Tools**
+
+# 1. **Multimodal AI**: A platform that enables AI models to process multiple data types, including text, images, and audio.
+# 2. **Adobe Premiere Pro**: A video editing software that uses AI to analyze and edit videos.
+# 3. **TikTok Symphony**: A platform that uses AI to generate music and audio tracks.
+# 4. **SlidesAI**: A presentation software that uses AI to generate slides and presentations.
+# 5. **LogoFast**: A logo generation tool that uses AI to create custom logos.
+
+# **AI for Workplace Productivity**
+
+# 1. **Microsoft Copilot**: An AI-powered coding assistant that helps developers write code.
+# 2. **Google AI Essentials**: A platform that provides AI-powered tools for businesses and individuals.
+# 3. **IBM Data Science**: A platform that uses AI to analyze and visualize data.
+# 4. **Amazon CodeWhisperer**: An AI-powered coding assistant that helps developers write code.
+# 5. **Notion AI**: A platform that uses AI to generate notes and documents.
+
+# **AI in Science and Health Care**
+
+# 1. **DeepMind**: A platform that uses AI to analyze and understand complex scientific data.
+# 2. **Google Health**: A platform that uses AI to analyze and understand health care data.
+# 3. **Microsoft Health Bot**: A platform that uses AI to generate health care chatbots.
+# 4. **IBM Watson Health**: A platform that uses AI to analyze and understand health care data.
+# 5. **Stanford AI Lab**: A research lab that develops AI tools for scientific and health care applications.
+
+# **Regulation and Ethics**
+
+# 1. **AI Ethics**: A platform that provides guidelines and frameworks for AI ethics.
+# 2. **Regulatory AI**: A platform that provides tools and resources for AI regulation.
+# 3. **AI Governance**: A platform that provides guidelines and frameworks for AI governance.
+# 4. **AI Transparency**: A platform that provides tools and resources for AI transparency.
+# 5. **AI Accountability**: A platform that provides guidelines and frameworks for AI accountability.
+
+# **Other AI Tools**
+
+# 1. **Face Animator**: A platform that uses AI to generate animated faces.
+# 2. **Face Swap**: A platform that uses AI to swap faces in images and videos.
+# 3. **Delphi AI**: A platform that uses AI to generate predictions and forecasts.
+# 4. **GPTZero**: A platform that uses AI to detect and prevent AI-generated content.
+# 5. **Remove BG**: A platform that uses AI to remove backgrounds from images.
+
+# This comprehensive list of AI tools for 2024 highlights the rapid growth and innovation in the field of artificial intelligence. As AI continues to transform industries and revolutionize the way we work and live, it is essential to stay informed about the latest developments and advancements in AI technology."""
+
+#     suggest_filename(ct)

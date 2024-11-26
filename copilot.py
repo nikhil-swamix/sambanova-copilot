@@ -20,9 +20,9 @@ logging.basicConfig(
 )
 
 # WORKSPACE_DIR
-(Path(__file__).parent / os.getenv('WORKSPACE_DIR', '.workspace')).mkdir(exist_ok=True)
+Path(os.getenv('WORKSPACE_DIR', '.workspace')).mkdir(exist_ok=True)
 # ARTIFACT_DIR
-(Path(__file__).parent / os.getenv('ARTIFACT_DIR', '.artifacts')).mkdir(exist_ok=True)
+Path(os.getenv('ARTIFACT_DIR', '.artifacts')).mkdir(exist_ok=True)
 
 required_vars = ['SAMBANOVA_API_KEY', 'GROQ_API_KEY', "VOYAGE_API_KEY"]
 missing_vars = [var for var in required_vars if not os.getenv(var)]
@@ -462,8 +462,6 @@ class ModernWidget(QWidget):
                     }
                 )
 
-            # Add transcript if exists
-
             # Send request to OpenAI
             try:
                 response = client.chat.completions.create(
@@ -519,20 +517,9 @@ class ModernWidget(QWidget):
     def export_artifact(self, markdown):
         try:
             self.status_label.setText("Exporting PDF...")
+            logging.info("Exporting PDF...")
             pdf_content = utils.save_artifact(markdown)
-
-            # Get suggested filename
-            utils.suggest_filename(markdown)
-
-            # Generate timestamp-based filename
-            filename = f"artifact_{int(time.time())}.pdf"
-            filepath = utils.get_resource_path(os.path.join(os.getenv('ARTIFACT_DIR', '.artifacts'), filename))
-
-            # Save PDF file
-            with open(filepath, 'wb') as f:
-                f.write(pdf_content)
-
-            self.status_label.setText(f"PDF exported to {filepath}")
+            self.status_label.setText(f"PDF exported to {os.getcwd()}")
 
         except Exception as e:
             self.status_label.setText(f"Export failed: {str(e)}")

@@ -38,12 +38,12 @@ python copilot.py
 Try to directly run the run\__.ps1 or .sh. here _ is platform. it will install dependencies and run the app. run 2 times if it fails the first time, (troubleshoot tip).
 
 ### Option 2 : Easiest (windows):
-
-Go to releases section and download the executable, and double click! should run in most cases unless some system settings are incorrect.
+[download fow win](https://github.com/nikhil-swamix/sambanova-copilot/releases)
+Go to releases section and download the executable, and double click! 
 
 ### Option 3 : Preferred (poetry):
 
-Get Poetry: https://python-poetry.org/docs/#installing-with-the-official-installer
+[Get Poetry](https://python-poetry.org/docs/#installing-with-the-official-installer)
 
 ```
 # Cd to directory after git clone
@@ -116,7 +116,8 @@ Pro Tip: Combine voice + image + clipboard for best results
 
 ![Example Meme](assets/samba-example-meme.png)
 
-# Configuration help
+<details>
+  <summary>Configuration help</summary>
 
 KEYS_WILL_BE_DELETED_POST_HACKATHON_DATE recommended to get your own keys, these keys are in .env file
 
@@ -136,6 +137,9 @@ KEYS_WILL_BE_DELETED_POST_HACKATHON_DATE recommended to get your own keys, these
 ##### WORKSPACE_DIR_HELP
 
     This is a folder of .md files which will be used as context for the AI
+  ```
+</details>
+
 
 ## Upcoming
 
