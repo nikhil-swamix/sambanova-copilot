@@ -18,7 +18,7 @@ class VectorDB:
 
         with suppress(Exception):
             self.create_collection(self.default_collection)
-        index_md_files(self, read_md_files())
+        # index_md_files(self, read_md_files())
 
     def embed(self, texts: Union[str, List[str]], model: str = "voyage-3") -> List[List[float]]:
         if isinstance(texts, str):

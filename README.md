@@ -1,6 +1,6 @@
 ![Banner](assets/hero.png)
 
-# Samba Copilot : Agent Storm Generator
+# Swamix Copilot : Agent Storm Generator
 
 [🎥Watch Video Demo](https://youtu.be/ZITFUoB8b-k)
 

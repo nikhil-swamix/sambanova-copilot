@@ -173,7 +173,7 @@ class ModernWidget(QWidget):
         top_bar = QHBoxLayout()
         top_bar.setContentsMargins(5, 0, 0, 5)
 
-        title_label = QLabel("SambaNova Copilot")
+        title_label = QLabel("TripGain Assistant")
         title_label.setStyleSheet("font-size: 16px; color: #fff; background: #000; padding: 0 4px; border-radius: 4px; ")
 
         close_button = QPushButton("☢️")
