@@ -1,6 +1,8 @@
+### Please note this repo will migrate to https://www.piwheels.org/project/swamix/ as internal toolkit. [why?](https://www.linkedin.com/posts/nikhilswamiofficial_ai-ml-hackathon-activity-7272942865389953024-YS3B?utm_source=share&utm_medium=member_desktop) 
+
 ![Banner](assets/hero.png)
 
-# Swamix Copilot : Agent Storm Generator
+# Swamix Copilot : Agent based Copilot 
 
 [🎥Watch Video Demo](https://youtu.be/ZITFUoB8b-k)
 
